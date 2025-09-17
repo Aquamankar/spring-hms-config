@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: property-service
+
+server:
+  port: 9091   # Different from default
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/propertydb_dev
+    username: devuser
+    password: devpass
+
+aws:
+  s3:
+    bucket-name: hms-photos-dev
