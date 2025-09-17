@@ -40,11 +40,11 @@ spring:
 server:
   port: 9090
 
-aws:
-  s3:
-    bucket-name: hms-photos-3
-  region:
-    static: ap-south-1
-  credentials:
-    access-key: AKIAZKDIDF7GRNFCZ45U
-    secret-key: 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
+# aws:
+#   s3:
+#     bucket-name: hms-photos-3
+#   region:
+#     static: ap-south-1
+#   credentials:
+#     access-key: AKIAZKDIDF7GRNFCZ45U
+#     secret-key: 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
