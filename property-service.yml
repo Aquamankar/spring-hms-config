@@ -32,12 +32,12 @@ spring:
   main:
     allow-circular-references: true
 
-cloud:
-  aws:
-    region:
-      static: ap-south-1
-    credentials:
-      access-key: 
-      secret-key: 
-    s3:
-      bucket-name: hms-photos-3
+# cloud:
+#   aws:
+#     region:
+#       static: ap-south-1
+#     credentials:
+#       access-key: 
+#       secret-key: 
+#     s3:
+#       bucket-name: hms-photos-3
