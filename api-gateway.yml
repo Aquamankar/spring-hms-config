@@ -1,24 +1,54 @@
-server:
-  port: 8080
-
 spring:
   application:
     name: api-gateway
 
   cloud:
+    config:
+      uri: http://localhost:9296
+    bus:
+      enabled: true
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+
     gateway:
       routes:
-        - id: employee-service
-          uri: lb://employee-service
+        - id: auth-service-app
+          uri: lb://AUTHSERVICEAPP
           predicates:
-            - Path=/employee/**
+            - Path=/auth/**
+          filters:
+            - RewritePath=/auth/(?<segment>.*), /${segment}
 
-        - id: department-service
-          uri: lb://department-service
+        - id: propertyservice-api
+          uri: lb://PROPERTY-SERVICE
           predicates:
-            - Path=/department/**
+            - Path=/property/**
+          filters:
+            - RewritePath=/property/(?<segment>.*), /${segment}
+            - name: CircuitBreaker
+              args:
+                name: propertyServiceCircuitBreaker
+                fallbackUri: forward:/fallback/property
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+
+zipkin:
+  base-url: http://localhost:9411
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  tracing:
+    sampling:
+      probability: 1.0
+
