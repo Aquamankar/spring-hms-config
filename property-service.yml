@@ -12,7 +12,7 @@ spring:
         binder:
           # IMPORTANT: Use the same bootstrap-servers as your main Kafka config
           # The property-service must connect to the bus/stream broker.
-          brokers: ec2-13-127-137-128.ap-south-1.compute.amazonaws.com:9092
+          brokers: localhost:9092
   
   # --- 2. DATASOURCE CONFIGURATION ---
   datasource:
@@ -34,7 +34,7 @@ spring:
       
   # --- 5. APPLICATION-SPECIFIC KAFKA CONFIGURATION ---
   kafka:
-    bootstrap-servers: ec2-13-127-137-128.ap-south-1.compute.amazonaws.com:9092
+    bootstrap-servers: localhost:9092
     consumer:
       group-id: notification-group
       auto-offset-reset: earliest
