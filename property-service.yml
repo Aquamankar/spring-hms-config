@@ -66,4 +66,4 @@ management:
 
 # --- 8. APPLICATION PROPERTIES ---
 product:
-  message: Hello from GitHub Config Server!
+  message: Configuration Updated Successfully!
