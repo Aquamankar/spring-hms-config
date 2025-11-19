@@ -3,23 +3,28 @@ spring:
     name: property-service
     
   # --- 1. SPRING CLOUD BUS & KAFKA STREAM BINDER ---
-  # This section enables the service to listen for bus-refresh events on Kafka.
   cloud:
     bus:
       enabled: true
+      # 👇 CRITICAL FIX: Tell the Spring Cloud Bus consumer to start from the latest offset 
+      #    to skip any corrupted historical messages on the 'springCloudBus' topic.
+      kafka:
+        consumer:
+          auto-offset-reset: latest 
+          
     stream:
       kafka:
         binder:
           # IMPORTANT: Use the same bootstrap-servers as your main Kafka config
           # The property-service must connect to the bus/stream broker.
           brokers: localhost:9092
-  
+          
   # --- 2. DATASOURCE CONFIGURATION ---
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:3306/propertydb_m
     username: root
     password: test
-  
+    
   # --- 3. JPA/HIBERNATE CONFIGURATION ---
   jpa:
     hibernate:
@@ -37,7 +42,7 @@ spring:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: notification-group
-      auto-offset-reset: latest
+      auto-offset-reset: latest # This is for your application's custom consumers
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
@@ -55,15 +60,13 @@ spring:
     allow-circular-references: true
     
 # --- 7. ACTUATOR ENDPOINT EXPOSURE ---
-# This is necessary for the service to process the refresh event internally.
 management:
   endpoints:
     web:
       exposure:
         # Expose the 'refresh' endpoint so the service can process the config change
         include: "health,info,refresh"
-        # If you were refreshing the property-service itself, you'd add: bus-refresh
-
+        
 # --- 8. APPLICATION PROPERTIES ---
 product:
-  message:  Updated Successfully!
+  message: Updated Successfully!
