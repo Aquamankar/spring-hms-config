@@ -21,6 +21,11 @@ spring:
       bindings:
         springCloudBusInput:
           group: ${spring.application.name} # Will resolve to 'api-gateway'
+          # 👇👇👇 CRITICAL DLQ CONFIGURATION ADDED HERE 👇👇👇
+          consumer:
+            max-attempts: 1   # Try once
+            enable-dlq: true  # If it fails (deserialization error), send to DLQ topic and move on
+          # 👆👆👆 CRITICAL DLQ CONFIGURATION ADDED HERE 👆👆👆
       kafka:
         binder:
           brokers: localhost:9092
@@ -49,7 +54,7 @@ spring:
                 redis-rate-limiter.replenishRate: 1
                 redis-rate-limiter.burstCapacity: 1
     
-  # *** NEW SECTION FOR ERROR HANDLING DESERIALIZER ***
+  # *** APPLICATION-SPECIFIC KAFKA CONFIGURATION (ErrorHandlingDeserializer) ***
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -61,7 +66,6 @@ spring:
         # CRITICAL FIX 5: Delegate the actual deserialization to the original classes
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-  # *** END OF NEW SECTION ***
 
 logging:
   pattern:
