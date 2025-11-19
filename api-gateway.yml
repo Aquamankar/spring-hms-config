@@ -5,7 +5,7 @@ spring:
   cloud:
     config:
       uri: http://localhost:9296
-      
+
     bus:
       enabled: true
       kafka:
@@ -48,6 +48,20 @@ spring:
               args:
                 redis-rate-limiter.replenishRate: 1
                 redis-rate-limiter.burstCapacity: 1
+    
+  # *** NEW SECTION FOR ERROR HANDLING DESERIALIZER ***
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      # CRITICAL FIX 4: Use the ErrorHandlingDeserializer to catch serialization errors
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        # CRITICAL FIX 5: Delegate the actual deserialization to the original classes
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+  # *** END OF NEW SECTION ***
 
 logging:
   pattern:
