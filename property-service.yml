@@ -1,7 +1,7 @@
 spring:
   application:
     name: property-service
-    
+
   # --- 1. SPRING CLOUD BUS & KAFKA STREAM BINDER ---
   cloud:
     bus:
@@ -12,8 +12,8 @@ spring:
           properties:
             spring.json.value.default.type: org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
           # Keep this in case a new group is created:
-          auto-offset-reset: latest 
-          
+          auto-offset-reset: latest
+
     stream:
       # CRITICAL FIX 2: Define a fixed group ID for the bus topic to prevent anonymous IDs
       bindings:
@@ -23,35 +23,45 @@ spring:
         binder:
           # IMPORTANT: Use the same bootstrap-servers as your main Kafka config
           brokers: localhost:9092
-          
+
   # --- 2. DATASOURCE CONFIGURATION ---
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:3306/propertydb_m
     username: root
     password: test
-    
+
   # --- 3. JPA/HIBERNATE CONFIGURATION ---
   jpa:
     hibernate:
       ddl-auto: update
-      
+
   # --- 4. SERVLET/MULTIPART CONFIGURATION ---
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 20MB
-      
+
   # --- 5. APPLICATION-SPECIFIC KAFKA CONFIGURATION ---
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: notification-group
       auto-offset-reset: latest # This is for your application's custom consumers
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      
+      # *** CRITICAL FIX: Use the ErrorHandlingDeserializer to catch serialization errors ***
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      
       properties:
         spring.json.trusted.packages: "*"
+        
+        # *** CRITICAL FIX: Delegate the actual deserialization to the original classes ***
+        # Tells the ErrorHandlingDeserializer what to use for the key
+        spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+        # Tells the ErrorHandlingDeserializer what to use for the value
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -59,11 +69,11 @@ spring:
       properties:
         num.partitions: 1
         replication.factor: 1
-        
+
   # --- 6. MAIN CONFIGURATION ---
   main:
     allow-circular-references: true
-    
+
 # --- 7. ACTUATOR ENDPOINT EXPOSURE ---
 management:
   endpoints:
@@ -71,7 +81,7 @@ management:
       exposure:
         # Expose the 'refresh' endpoint so the service can process the config change
         include: "health,info,refresh"
-        
+
 # --- 8. APPLICATION PROPERTIES ---
 product:
   message: Akanksha you did Updated Successfully
