@@ -6,17 +6,22 @@ spring:
   cloud:
     bus:
       enabled: true
-      # 👇 CRITICAL FIX: Tell the Spring Cloud Bus consumer to start from the latest offset 
-      #    to skip any corrupted historical messages on the 'springCloudBus' topic.
       kafka:
         consumer:
+          # CRITICAL FIX 1: Provide the default class type for bus events when headers are missing.
+          properties:
+            spring.json.value.default.type: org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
+          # Keep this in case a new group is created:
           auto-offset-reset: latest 
           
     stream:
+      # CRITICAL FIX 2: Define a fixed group ID for the bus topic to prevent anonymous IDs
+      bindings:
+        springCloudBusInput:
+          group: ${spring.application.name} # Will resolve to 'property-service'
       kafka:
         binder:
           # IMPORTANT: Use the same bootstrap-servers as your main Kafka config
-          # The property-service must connect to the bus/stream broker.
           brokers: localhost:9092
           
   # --- 2. DATASOURCE CONFIGURATION ---
