@@ -5,9 +5,22 @@ spring:
   cloud:
     config:
       uri: http://localhost:9296
+      
     bus:
       enabled: true
+      kafka:
+        consumer:
+          # CRITICAL FIX 1: Provide the default class type for bus events when headers are missing.
+          properties:
+            spring.json.value.default.type: org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
+          # CRITICAL FIX 2: Set to latest to skip corrupted messages when starting fresh
+          auto-offset-reset: latest 
+
     stream:
+      # CRITICAL FIX 3: Define a fixed group ID for the bus topic to prevent anonymous IDs
+      bindings:
+        springCloudBusInput:
+          group: ${spring.application.name} # Will resolve to 'api-gateway'
       kafka:
         binder:
           brokers: localhost:9092
@@ -51,4 +64,3 @@ management:
   tracing:
     sampling:
       probability: 1.0
-
