@@ -66,4 +66,4 @@ management:
 
 # --- 8. APPLICATION PROPERTIES ---
 product:
-  message: Configuration Updated Successfully!
+  message:  Updated Successfully!
