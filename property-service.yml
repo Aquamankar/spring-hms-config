@@ -8,25 +8,22 @@ spring:
       enabled: true
       kafka:
         consumer:
-          # CRITICAL FIX 1: Provide the default class type for bus events when headers are missing.
+          # CRITICAL FIX 1: Default type when headers missing
           properties:
             spring.json.value.default.type: org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
-          # Keep this in case a new group is created:
           auto-offset-reset: latest
 
     stream:
-      # CRITICAL FIX 2: Define a fixed group ID for the bus topic to prevent anonymous IDs
+      # CRITICAL FIX 2: Fixed group ID so no random anonymous IDs
       bindings:
         springCloudBusInput:
-          group: ${spring.application.name} # Will resolve to 'property-service'
-          # 👇👇👇 CRITICAL FIX 3: DLQ Configuration to prevent infinite retry loop 👇👇👇
+          group: ${spring.application.name} # property-service
+          # CRITICAL FIX 3: DLQ enabled so corrupted messages NEVER get retried forever
           consumer:
-            max-attempts: 1   # Try once
-            enable-dlq: true  # If it fails (deserialization error), send to DLQ topic and move on
-          # 👆👆👆 CRITICAL FIX 3: DLQ Configuration to prevent infinite retry loop 👆👆👆
+            max-attempts: 1
+            enable-dlq: true
       kafka:
         binder:
-          # IMPORTANT: Use the same bootstrap-servers as your main Kafka config
           brokers: localhost:9092
 
   # --- 2. DATASOURCE CONFIGURATION ---
@@ -40,53 +37,53 @@ spring:
     hibernate:
       ddl-auto: update
 
-  # --- 4. SERVLET/MULTIPART CONFIGURATION ---
+  # --- 4. SERVLET/MULTIPART CONFIG ---
   servlet:
     multipart:
       enabled: true
       max-file-size: 10MB
       max-request-size: 20MB
 
-  # --- 5. APPLICATION-SPECIFIC KAFKA CONFIGURATION (ErrorHandlingDeserializer) ---
+  # --- 5. APPLICATION-SPECIFIC KAFKA (ErrorHandlingDeserializer) ---
   kafka:
     bootstrap-servers: localhost:9092
+
     consumer:
       group-id: notification-group
-      auto-offset-reset: latest # This is for your application's custom consumers
+      auto-offset-reset: latest
 
-      # *** CRITICAL FIX: Use the ErrorHandlingDeserializer to catch serialization errors ***
+      # CRITICAL FIX — use ErrorHandlingDeserializer
       key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 
       properties:
         spring.json.trusted.packages: "*"
 
-        # *** CRITICAL FIX: Delegate the actual deserialization to the original classes ***
-        # Tells the ErrorHandlingDeserializer what to use for the key
+        # Delegate actual deserialization
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
-        # Tells the ErrorHandlingDeserializer what to use for the value
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
     admin:
       properties:
         num.partitions: 1
         replication.factor: 1
 
-  # --- 6. MAIN CONFIGURATION ---
+  # --- 6. MAIN CONFIG ---
   main:
     allow-circular-references: true
 
-# --- 7. ACTUATOR ENDPOINT EXPOSURE ---
+
+# --- 7. ACTUATOR ---
 management:
   endpoints:
     web:
       exposure:
-        # Expose the 'refresh' endpoint so the service can process the config change
         include: "health,info,refresh"
 
-# --- 8. APPLICATION PROPERTIES ---
+# --- 8. APPLICATION-SPECIFIC PROPS ---
 product:
   message: Updated Successfully
