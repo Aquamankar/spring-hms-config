@@ -8,64 +8,46 @@ spring:
 
     bus:
       enabled: true
+      id: ${spring.application.name}
       kafka:
         consumer:
-          # CRITICAL FIX 1: Provide the default class type for bus events when headers are missing.
           properties:
-            spring.json.value.default.type: org.springframework.cloud.bus.event.RefreshRemoteApplicationEvent
-          # CRITICAL FIX 2: Set to latest to skip corrupted messages when starting fresh
-          auto-offset-reset: latest 
+            spring.json.value.default.type: org.springframework.cloud.bus.event.RemoteApplicationEvent
 
-    stream:
-      # CRITICAL FIX 3: Define a fixed group ID for the bus topic to prevent anonymous IDs
-      bindings:
-        springCloudBusInput:
-          group: ${spring.application.name} # Will resolve to 'api-gateway'
-          # 👇👇👇 CRITICAL DLQ CONFIGURATION ADDED HERE 👇👇👇
-          consumer:
-            max-attempts: 1   # Try once
-            enable-dlq: true  # If it fails (deserialization error), send to DLQ topic and move on
-          # 👆👆👆 CRITICAL DLQ CONFIGURATION ADDED HERE 👆👆👆
-      kafka:
-        binder:
-          brokers: localhost:9092
+  gateway:
+    routes:
+      - id: auth-service-app
+        uri: lb://AUTHSERVICEAPP
+        predicates:
+          - Path=/auth/**
+        filters:
+          - RewritePath=/auth/(?<segment>.*), /${segment}
 
-    gateway:
-      routes:
-        - id: auth-service-app
-          uri: lb://AUTHSERVICEAPP
-          predicates:
-            - Path=/auth/**
-          filters:
-            - RewritePath=/auth/(?<segment>.*), /${segment}
+      - id: propertyservice-api
+        uri: lb://PROPERTY-SERVICE
+        predicates:
+          - Path=/property/**
+        filters:
+          - RewritePath=/property/(?<segment>.*), /${segment}
+          - name: CircuitBreaker
+            args:
+              name: propertyServiceCircuitBreaker
+              fallbackUri: forward:/fallback/property
+          - name: RequestRateLimiter
+            args:
+              redis-rate-limiter.replenishRate: 1
+              redis-rate-limiter.burstCapacity: 1
 
-        - id: propertyservice-api
-          uri: lb://PROPERTY-SERVICE
-          predicates:
-            - Path=/property/**
-          filters:
-            - RewritePath=/property/(?<segment>.*), /${segment}
-            - name: CircuitBreaker
-              args:
-                name: propertyServiceCircuitBreaker
-                fallbackUri: forward:/fallback/property
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter.replenishRate: 1
-                redis-rate-limiter.burstCapacity: 1
-    
-  # *** APPLICATION-SPECIFIC KAFKA CONFIGURATION (ErrorHandlingDeserializer) ***
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      # CRITICAL FIX 4: Use the ErrorHandlingDeserializer to catch serialization errors
       key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        # CRITICAL FIX 5: Delegate the actual deserialization to the original classes
         spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.value.default.type: org.springframework.cloud.bus.event.RemoteApplicationEvent
 
 logging:
   pattern:
